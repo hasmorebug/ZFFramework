@@ -18,16 +18,6 @@
 ZF_NAMESPACE_GLOBAL_BEGIN
 
 /**
- * @brief add this to your precompiler to show that you want the #zfLogStackTrace/#zfLogCallerInfo function
- */
-#ifndef ZFLOG_STACKTRACE_SUPPORT
-    #define ZFLOG_STACKTRACE_SUPPORT 0
-#else
-    #undef ZFLOG_STACKTRACE_SUPPORT
-    #define ZFLOG_STACKTRACE_SUPPORT 1
-#endif
-
-/**
  * @brief true if #zfLogStackTrace and #zfLogCallerInfo is available
  */
 extern ZF_ENV_EXPORT zfbool zfLogStackTraceAvailable(void);

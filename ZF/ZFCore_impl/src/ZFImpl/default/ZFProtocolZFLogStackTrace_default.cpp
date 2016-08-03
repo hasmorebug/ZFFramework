@@ -18,7 +18,7 @@ ZF_NAMESPACE_GLOBAL_BEGIN
 
 /*
  * you must:
- * -  add ZFLOG_STACKTRACE_SUPPORT to your precompiler
+ * -  add ZF_EDD_STACK_TRACE to your precompiler
  * -  have DbgHelp support (DbgHelp.lib), if under Windows without MinGW
  * -  link "libbfd.a, libiberty.a, libimagehlp.a, libpsapi.a",
  *    and add "-gstabs" to compiler, if under Windows MinGW
