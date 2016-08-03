@@ -11,7 +11,7 @@
 ZF_NAMESPACE_GLOBAL_BEGIN
 
 ZFSERIALIZABLEDATAIO_DEFINE(ZFSerializableDataIOTypeId_xml, {
-        if(!ZFSerializableDataParseXml(serializableData, input))
+        if(!ZFXmlParse(serializableData, input))
         {
             zfstringAppend(errorMessage, zfText("unable to parse xml"));
             return zffalse;

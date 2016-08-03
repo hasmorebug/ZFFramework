@@ -25,7 +25,7 @@ zfautoObject ZFResJson(ZF_IN const zfchar *resPath)
     }
 
     ZFSerializableData data;
-    if(!ZFSerializableDataParseJson(data, ZFInputCallbackForResFile(resPath)))
+    if(!ZFJsonParse(data, ZFInputCallbackForResFile(resPath)))
     {
         return zfautoObjectNull;
     }

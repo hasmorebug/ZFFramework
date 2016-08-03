@@ -17,6 +17,10 @@
 #include "ZFJson.h"
 ZF_NAMESPACE_GLOBAL_BEGIN
 
+ZFOUTPUT_TYPE(ZFJsonItem, {output << v.objectInfo();})
+ZFOUTPUT_TYPE(const ZFJsonItem *, {if(v) {output << v->objectInfo();} else {output << (const void *)zfnull;}})
+ZFOUTPUT_TYPE(ZFJsonItem *, {output << (const ZFJsonItem *)v;})
+
 // ============================================================
 // json serializable conversion
 
@@ -46,49 +50,45 @@ ZF_NAMESPACE_GLOBAL_BEGIN
 /** @brief see #ZFSerializableDataRefType_json */
 #define ZFObjectCreatorTypeName_json ZFMACRO_TOSTRING(ZFObjectCreatorType_json)
 
+// ============================================================
 /**
- * @brief convert serializable data from json
+ * @brief parse json formated data to serializable
  */
-extern ZF_ENV_EXPORT zfbool ZFJsonToSerializableData(ZF_OUT ZFSerializableData &serializableData,
-                                                     ZF_IN const ZFJsonItem *jsonObject,
-                                                     ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                     ZF_OUT_OPT const ZFJsonItem **outErrorPos = zfnull);
+extern ZF_ENV_EXPORT zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
+                                                          ZF_IN const ZFJsonItem *jsonObject,
+                                                          ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
+                                                          ZF_OUT_OPT const ZFJsonItem **outErrorPos = zfnull);
 /**
- * @brief see #ZFJsonToSerializableData
+ * @brief see #ZFJsonParseToSerializableData
  */
-extern ZF_ENV_EXPORT ZFSerializableData ZFJsonToSerializableData(ZF_IN const ZFJsonItem *jsonObject,
-                                                                 ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                                 ZF_OUT_OPT const ZFJsonItem **outErrorPos = zfnull);
+extern ZF_ENV_EXPORT ZFSerializableData ZFJsonParseToSerializableData(ZF_IN const ZFJsonItem *jsonObject,
+                                                                      ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
+                                                                      ZF_OUT_OPT const ZFJsonItem **outErrorPos = zfnull);
 /**
- * @brief convert serializable data from json, see #ZFJsonToSerializableData
+ * @brief print serializable to json formated data
  */
-extern ZF_ENV_EXPORT zfbool ZFJsonFromSerializableData(ZF_OUT ZFJsonItem &jsonObject,
-                                                       ZF_IN const ZFSerializableData &serializableData,
-                                                       ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                       ZF_OUT_OPT const ZFSerializableData **outErrorPos = zfnull);
+extern ZF_ENV_EXPORT zfbool ZFJsonPrintFromSerializableData(ZF_OUT ZFJsonItem &jsonObject,
+                                                            ZF_IN const ZFSerializableData &serializableData,
+                                                            ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
+                                                            ZF_OUT_OPT const ZFSerializableData **outErrorPos = zfnull);
 /**
- * @brief see #ZFJsonFromSerializableData
+ * @brief see #ZFJsonPrintFromSerializableData
  */
-extern ZF_ENV_EXPORT ZFJsonItem ZFJsonFromSerializableData(ZF_IN const ZFSerializableData &serializableData,
-                                                           ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                           ZF_OUT_OPT const ZFSerializableData **outErrorPos = zfnull);
+extern ZF_ENV_EXPORT ZFJsonItem ZFJsonPrintFromSerializableData(ZF_IN const ZFSerializableData &serializableData,
+                                                                ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
+                                                                ZF_OUT_OPT const ZFSerializableData **outErrorPos = zfnull);
 
+// ============================================================
 /**
  * @brief util method to print serializable data in json format, usually for debug use only
  */
 extern ZF_ENV_EXPORT void ZFJsonPrint(ZF_IN const ZFSerializableData &serializableData,
                                       ZF_IN_OPT const ZFOutputCallback &outputCallback = ZFOutputCallbackDefault,
                                       ZF_IN_OPT const ZFJsonOutputFlags &flags = ZFJsonOutputFlagsDefault);
-/**
- * @brief util method to print serializable object in json format, usually for debug use only
- */
+/** @brief see #ZFJsonPrint */
 extern ZF_ENV_EXPORT void ZFJsonPrint(ZF_IN ZFObject *obj,
                                       ZF_IN_OPT const ZFOutputCallback &outputCallback = ZFOutputCallbackDefault,
                                       ZF_IN_OPT const ZFJsonOutputFlags &flags = ZFJsonOutputFlagsDefault);
-
-ZFOUTPUT_TYPE(ZFJsonItem, {output << v.objectInfo();})
-ZFOUTPUT_TYPE(const ZFJsonItem *, {if(v) {output << v->objectInfo();} else {output << (const void *)zfnull;}})
-ZFOUTPUT_TYPE(ZFJsonItem *, {output << (const ZFJsonItem *)v;})
 
 // ============================================================
 /**
@@ -97,20 +97,9 @@ ZFOUTPUT_TYPE(ZFJsonItem *, {output << (const ZFJsonItem *)v;})
  * this method would automatically setup
  * #ZFSerializableDataTagKeyword_filePath/#ZFSerializableDataTagKeyword_resPath
  */
-extern ZF_ENV_EXPORT zfbool ZFSerializableDataParseJson(ZF_OUT ZFSerializableData &ret, ZF_IN const ZFInputCallback &input);
-/** @brief see #ZFSerializableDataParseJson */
-inline ZFSerializableData ZFSerializableDataParseJson(ZF_IN const ZFInputCallback &input)
-{
-    ZFSerializableData ret;
-    if(ZFSerializableDataParseJson(ret, input))
-    {
-        return ret;
-    }
-    else
-    {
-        return ZFSerializableData();
-    }
-}
+extern ZF_ENV_EXPORT zfbool ZFJsonParse(ZF_OUT ZFSerializableData &ret, ZF_IN const ZFInputCallback &input);
+/** @brief see #ZFJsonParse */
+extern ZF_ENV_EXPORT ZFSerializableData ZFJsonParse(ZF_IN const ZFInputCallback &input);
 
 ZF_NAMESPACE_GLOBAL_END
 #endif // #ifndef _ZFI_ZFJsonSerializableConverterDef_h_

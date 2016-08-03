@@ -11,7 +11,7 @@
 ZF_NAMESPACE_GLOBAL_BEGIN
 
 ZFSERIALIZABLEDATAIO_DEFINE(ZFSerializableDataIOTypeId_json, {
-        if(!ZFSerializableDataParseJson(serializableData, input))
+        if(!ZFJsonParse(serializableData, input))
         {
             zfstringAppend(errorMessage, zfText("unable to parse json"));
             return zffalse;

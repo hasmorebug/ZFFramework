@@ -12,12 +12,12 @@
  *   child->buttonLabelTextSet(zflineAlloc(ZFString, zfText("button")));
  *
  *   ZFSerializableData data = ZFObjectToSerializableData(parent);
- *   ZFXmlItem xml = ZFXmlFromSerializableData(data);
+ *   zfstring xmlString;
+ *   ZFXmlPrint(data, ZFOutputCallbackForString(xmlString));
  *   zfLogTrimT() << zfText("serialized data:");
- *   xml.xmlVisit(ZFXmlVisitCallbackForOutput());
+ *   zfLogTrimT() << xmlString;
  *
- *   ZFSerializableData dataNew;
- *   ZFXmlToSerializableData(dataNew, xml);
+ *   ZFSerializableData dataNew = ZFXmlParse(ZFInputCallbackForString(xmlString));
  *   zfautoObject objNew = ZFObjectFromSerializableData(dataNew);
  *   zfLogTrimT() << zfText("re-serialized object:");
  *   zfLogTrimT() << objNew.toObject();

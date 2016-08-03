@@ -18,7 +18,7 @@ ZFMAIN_ENTRY(params)
 {
     if(zftrue)
     {
-        zfLangLoad(ZFSerializableDataParseXml(ZFInputCallbackForResFile(zfText("ZF2048/lang/lang_default.xml"))));
+        zfLangLoad(ZFXmlParse(ZFInputCallbackForResFile(zfText("ZF2048/lang/lang_default.xml"))));
 
         zfblockedAlloc(ZFUIWindow, window);
         window->windowShow();
@@ -154,11 +154,11 @@ private:
                 langFlag = !langFlag;
                 if(langFlag)
                 {
-                    zfLangLoad(ZFSerializableDataParseXml(ZFInputCallbackForResFile(zfText("ZF2048/lang/lang_default.xml"))));
+                    zfLangLoad(ZFXmlParse(ZFInputCallbackForResFile(zfText("ZF2048/lang/lang_default.xml"))));
                 }
                 else
                 {
-                    zfLangLoad(ZFSerializableDataParseXml(ZFInputCallbackForResFile(zfText("ZF2048/lang/lang_zh-CN.xml"))));
+                    zfLangLoad(ZFXmlParse(ZFInputCallbackForResFile(zfText("ZF2048/lang/lang_zh-CN.xml"))));
                 }
             }
         }

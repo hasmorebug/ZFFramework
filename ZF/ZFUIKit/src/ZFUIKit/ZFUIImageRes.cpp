@@ -48,7 +48,7 @@ zfautoObject ZFUIImageResXml(ZF_IN const zfchar *resPath)
     }
 
     ZFSerializableData data;
-    if(!ZFSerializableDataParseXml(data, ZFInputCallbackForResFile(resPath)))
+    if(!ZFXmlParse(data, ZFInputCallbackForResFile(resPath)))
     {
         return zfautoObjectNull;
     }

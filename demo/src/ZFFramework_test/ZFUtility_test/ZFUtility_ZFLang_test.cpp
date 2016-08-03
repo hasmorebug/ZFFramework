@@ -23,12 +23,12 @@ protected:
         zfsuper::testCaseOnStart();
 
         this->testCaseOutput(zfText("load default language"));
-        zfLangLoad(ZFSerializableDataParseXml(ZFInputCallbackForResFile(zfText("test_ZFLang_default.xml"))));
+        zfLangLoad(ZFXmlParse(ZFInputCallbackForResFile(zfText("test_ZFLang_default.xml"))));
         this->test();
 
         this->testCaseOutputSeparator();
         this->testCaseOutput(zfText("load custom language"));
-        zfLangLoad(ZFSerializableDataParseXml(ZFInputCallbackForResFile(zfText("test_ZFLang_custom.xml"))));
+        zfLangLoad(ZFXmlParse(ZFInputCallbackForResFile(zfText("test_ZFLang_custom.xml"))));
         this->test();
 
         this->testCaseStop();
