@@ -146,7 +146,13 @@ public:
         {
             if(event->type() == QEvent::ChildRemoved)
             {
-                this->nativeAniStop();
+                QChildEvent *eventTmp = (QChildEvent *)event;
+                if(eventTmp->child() == this->aniTargetCached)
+                {
+                    // child removed during animation,
+                    // stop it manually
+                    this->nativeAniOnStop();
+                }
             }
             return zffalse;
         }
