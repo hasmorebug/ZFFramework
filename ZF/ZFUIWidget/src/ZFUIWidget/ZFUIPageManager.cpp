@@ -53,8 +53,8 @@ public:
     ZFUIPageManager *pageManager;
     ZFCoreArrayPOD<ZFUIPage *> pageList;
     zfbool managerResumed;
-    zfindex managerUIEnableFlag;
-    zfindex managerBlockRequestFlag;
+    zfindex managerUIBlocked;
+    zfindex requestBlocked;
     ZFCoreQueuePOD<ZFUIPageRequest *> requestQueue;
     zfbool requestRunning;
     ZFListener requestOnResolveListener;
@@ -65,7 +65,7 @@ public:
     void requestDoPost(ZF_IN ZFObject *owner)
     {
         zfsynchronizedObject(owner);
-        if(this->managerBlockRequestFlag > 0 || this->requestQueue.isEmpty() || this->requestRunning)
+        if(this->requestBlocked > 0 || this->requestQueue.isEmpty() || this->requestRunning)
         {
             return ;
         }
@@ -83,21 +83,21 @@ private:
     {
         ZFUIPageManager *manager = userData->to<ZFUIPageManager *>();
         zfsynchronizedObject(manager->toObject());
-        if(manager->d->managerBlockRequestFlag > 0 || manager->d->requestQueue.isEmpty())
+        if(manager->d->requestBlocked > 0 || manager->d->requestQueue.isEmpty())
         {
             manager->d->requestRunning = zffalse;
             return ;
         }
 
-        manager->managerBlockRequest(zftrue);
+        manager->requestBlockedSet(zftrue);
         ZFUIPageRequest *request = manager->d->requestQueue.queueTake();
         manager->requestOnResolve(request);
-        manager->managerUIEnableSet(zftrue);
+        manager->managerUIBlockedSet(zffalse);
         zfCoreAssertWithMessageTrim(request->requestResolved(), zfTextA("[ZFUIPageManager] unresolved request: %s"), zfsCoreZ2A(request->objectInfo().cString()));
         manager->requestOnResolveFinish(request);
         ZFLeakTestLogReleaseVerbose(request, ZF_CALLER_FILE, zfTextA("requestOnResolve"), ZF_CALLER_LINE);
         zfReleaseWithoutLeakTest(request);
-        manager->managerBlockRequest(zffalse);
+        manager->requestBlockedSet(zffalse);
         manager->d->requestRunning = zffalse;
 
         if(manager->d->requestQueue.isEmpty())
@@ -130,6 +130,8 @@ public:
     }
     void pageResume(ZF_IN ZFUIPage *page, ZF_IN ZFUIPageResumeReasonEnum reason)
     {
+        this->pageManager->pageBeforeResume(page, reason);
+        page->pageBeforeResume(reason);
         page->_ZFP_ZFUIPage_pageResume(reason);
         this->pageManager->pageOnResume(page, reason);
         page->pageAfterResume(reason);
@@ -141,6 +143,8 @@ public:
         page->pageBeforePause(reason);
         this->pageManager->pageOnPause(page, reason);
         page->_ZFP_ZFUIPage_pagePause(reason);
+        page->pageAfterPause(reason);
+        this->pageManager->pageAfterPause(page, reason);
     }
     void pageDestroy(ZF_IN ZFUIPage *page)
     {
@@ -173,8 +177,8 @@ public:
     : pageManager(zfnull)
     , pageList()
     , managerResumed(zffalse)
-    , managerUIEnableFlag(0)
-    , managerBlockRequestFlag(0)
+    , managerUIBlocked(0)
+    , requestBlocked(0)
     , requestQueue()
     , requestRunning(zffalse)
     , requestOnResolveListener()
@@ -260,7 +264,7 @@ void ZFUIPageManager::embededDestroy(void)
         }
         for(zfindex i = 0; i < tmp.count(); ++i)
         {
-            this->managerUIEnableSet(zftrue);
+            this->managerUIBlockedSet(zffalse);
             zfRelease(tmp[i]);
         }
     }
@@ -274,28 +278,39 @@ void ZFUIPageManager::embededDestroy(void)
 
 // ============================================================
 // manager control
-void ZFUIPageManager::managerUIEnableSet(ZF_IN zfbool value)
+void ZFUIPageManager::managerUIBlockedSet(ZF_IN zfbool value)
 {
+    zfsynchronizedObjectLock(this->toObject());
     if(value)
     {
-        --(d->managerUIEnableFlag);
-        if(d->managerUIEnableFlag == 0)
+        ++(d->managerUIBlocked);
+        if(d->managerUIBlocked == 1)
         {
-            this->managerUIEnableOnChange();
+            zfsynchronizedObjectUnlock(this->toObject());
+            this->managerUIBlockedOnChange();
+        }
+        else
+        {
+            zfsynchronizedObjectUnlock(this->toObject());
         }
     }
     else
     {
-        ++(d->managerUIEnableFlag);
-        if(d->managerUIEnableFlag == 1)
+        --(d->managerUIBlocked);
+        if(d->managerUIBlocked == 0)
         {
-            this->managerUIEnableOnChange();
+            zfsynchronizedObjectUnlock(this->toObject());
+            this->managerUIBlockedOnChange();
+        }
+        else
+        {
+            zfsynchronizedObjectUnlock(this->toObject());
         }
     }
 }
-zfbool ZFUIPageManager::managerUIEnable(void)
+zfindex ZFUIPageManager::managerUIBlocked(void)
 {
-    return (d->managerUIEnableFlag == 0);
+    return d->managerUIBlocked;
 }
 
 // ============================================================
@@ -363,21 +378,21 @@ void ZFUIPageManager::requestPost(ZF_IN ZFUIPageRequest *request)
     if(request != zfnull)
     {
         zfsynchronizedObject(this->toObject());
-        this->managerUIEnableSet(zffalse);
+        this->managerUIBlockedSet(zftrue);
         d->requestQueue.queuePut(zfRetain(request));
         d->requestDoPost(this->toObject());
     }
 }
-void ZFUIPageManager::managerBlockRequest(ZF_IN zfbool blockRequest)
+void ZFUIPageManager::requestBlockedSet(ZF_IN zfbool value)
 {
     zfsynchronizedObjectLock(this->toObject());
-    if(blockRequest)
+    if(value)
     {
-        ++(d->managerBlockRequestFlag);
-        if(d->managerBlockRequestFlag == 1)
+        ++(d->requestBlocked);
+        if(d->requestBlocked == 1)
         {
             zfsynchronizedObjectUnlock(this->toObject());
-            this->managerBlockRequestOnChange();
+            this->requestBlockedOnChange();
         }
         else
         {
@@ -386,11 +401,11 @@ void ZFUIPageManager::managerBlockRequest(ZF_IN zfbool blockRequest)
     }
     else
     {
-        --(d->managerBlockRequestFlag);
-        if(d->managerBlockRequestFlag == 0)
+        --(d->requestBlocked);
+        if(d->requestBlocked == 0)
         {
             zfsynchronizedObjectUnlock(this->toObject());
-            this->managerBlockRequestOnChange();
+            this->requestBlockedOnChange();
             d->requestDoPost(this->toObject());
         }
         else
@@ -398,6 +413,10 @@ void ZFUIPageManager::managerBlockRequest(ZF_IN zfbool blockRequest)
             zfsynchronizedObjectUnlock(this->toObject());
         }
     }
+}
+zfindex ZFUIPageManager::requestBlocked(void)
+{
+    return d->requestBlocked;
 }
 
 // ============================================================

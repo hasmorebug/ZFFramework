@@ -235,10 +235,10 @@ protected:
         this->_buttonLayout()->childAtIndex(0)->to<ZFUIButton *>()->buttonCheckedSet(zftrue);
     }
     zfoverride
-    virtual void managerUIEnableOnChange(void)
+    virtual void managerUIBlockedOnChange(void)
     {
-        zfsuper::managerUIEnableOnChange();
-        this->_container()->viewUIEnableTreeSet(this->managerUIEnable());
+        zfsuper::managerUIBlockedOnChange();
+        this->_container()->viewUIEnableTreeSet(!this->managerUIBlocked());
     }
     zfoverride
     virtual void pageOnAttach(ZF_IN ZFUIPage *page,

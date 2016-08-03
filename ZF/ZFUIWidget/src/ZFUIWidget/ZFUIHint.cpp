@@ -380,7 +380,7 @@ ZFObject *ZFUIHint::objectOnInit(void)
         zfsynchronizedObject(_ZFP_ZFUIHintSyncObj);
         ZFUIHint *hint = userData->to<ZFObjectHolder *>()->holdedObj;
         zfCoreAssertWithMessage(!hint->hintShowing(), zfTextA("you must not change ZFUIHint's window while it's showing or delaying"));
-        ZFUISysWindow *sysWindowOld = listenerData.param0->toAny();
+        ZFUISysWindow *sysWindowOld = listenerData.param0->to<ZFUISysWindow *>();
         ZFArrayEditable *hintListOld = _ZFP_ZFUIHint_hintListForWrite(sysWindowOld);
         ZFArrayEditable *hintListNew = _ZFP_ZFUIHint_hintListForWrite(hint->hintWindow()->ownerSysWindow());
         hintListNew->add(hint);

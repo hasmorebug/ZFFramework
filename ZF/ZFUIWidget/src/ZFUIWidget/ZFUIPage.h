@@ -93,6 +93,13 @@ public:
      * called when page resumed,
      * param0 is #ZFUIPageResumeReason
      */
+    ZFOBSERVER_EVENT(PageBeforeResume)
+    /**
+     * @brief see #ZFObject::observerNotify
+     *
+     * called when page resumed,
+     * param0 is #ZFUIPageResumeReason
+     */
     ZFOBSERVER_EVENT(PageAfterResume)
     /**
      * @brief see #ZFObject::observerNotify
@@ -101,6 +108,13 @@ public:
      * param0 is #ZFUIPagePauseReason
      */
     ZFOBSERVER_EVENT(PageBeforePause)
+    /**
+     * @brief see #ZFObject::observerNotify
+     *
+     * called when page resumed,
+     * param0 is #ZFUIPagePauseReason
+     */
+    ZFOBSERVER_EVENT(PageAfterPause)
     /**
      * @brief see #ZFObject::observerNotify
      *
@@ -201,6 +215,12 @@ protected:
     {
         this->toObject()->observerNotify(ZFUIPage::EventPageAfterCreate());
     }
+    /** @brief see #EventPageBeforeResume */
+    virtual inline void pageBeforeResume(ZF_IN ZFUIPageResumeReasonEnum reason)
+    {
+        this->toObject()->observerNotify(ZFUIPage::EventPageBeforeResume(),
+                                         zflineAllocWithoutLeakTest(ZFUIPageResumeReason, reason));
+    }
     /** @brief see #EventPageAfterResume */
     virtual inline void pageAfterResume(ZF_IN ZFUIPageResumeReasonEnum reason)
     {
@@ -211,6 +231,12 @@ protected:
     virtual inline void pageBeforePause(ZF_IN ZFUIPagePauseReasonEnum reason)
     {
         this->toObject()->observerNotify(ZFUIPage::EventPageBeforePause(),
+                                         zflineAllocWithoutLeakTest(ZFUIPagePauseReason, reason));
+    }
+    /** @brief see #EventPageAfterPause */
+    virtual inline void pageAfterPause(ZF_IN ZFUIPagePauseReasonEnum reason)
+    {
+        this->toObject()->observerNotify(ZFUIPage::EventPageAfterPause(),
                                          zflineAllocWithoutLeakTest(ZFUIPagePauseReason, reason));
     }
     /** @brief see #EventPageBeforeDestroy */

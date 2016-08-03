@@ -83,16 +83,15 @@ public:
      * @brief see #ZFObject::observerNotify
      *
      * called when page manager's UIEnable changed,
-     * see #managerUIEnableSet
+     * see #managerUIBlockedSet
      */
-    ZFOBSERVER_EVENT(ManagerUIEnableOnChange)
+    ZFOBSERVER_EVENT(ManagerUIBlockedOnChange)
     /**
      * @brief see #ZFObject::observerNotify
      *
-     * called when page manager's block request setting changed,
-     * see #managerBlockRequest
+     * called when #requestBlockedSet setting changed
      */
-    ZFOBSERVER_EVENT(ManagerBlockRequestOnChange)
+    ZFOBSERVER_EVENT(RequestBlockedOnChange)
     /**
      * @brief see #ZFObject::observerNotify
      *
@@ -100,7 +99,7 @@ public:
      * called when a request resolved
      * @note this event would also be fired to the #ZFUIPageRequest
      */
-    ZFOBSERVER_EVENT(ManagerRequestOnResolveFinish)
+    ZFOBSERVER_EVENT(RequestOnResolveFinish)
     /**
      * @brief see #ZFObject::observerNotify
      *
@@ -108,7 +107,7 @@ public:
      * @note it's allowed to post new request during activating this event,
      *   care about dead loop
      */
-    ZFOBSERVER_EVENT(ManagerRequestOnResolveFinishAll)
+    ZFOBSERVER_EVENT(RequestOnResolveFinishAll)
 
     /**
      * @brief see #ZFObject::observerNotify
@@ -127,16 +126,34 @@ public:
      * param0 is #ZFUIPageResumeReason,
      * param1 is the page manager
      */
-    ZFOBSERVER_EVENT(PageAfterResume)
+    ZFOBSERVER_EVENT(PageBeforeResume)
     /**
      * @brief see #ZFObject::observerNotify
      *
      * called when page resumed,
      * sender is the page,
+     * param0 is #ZFUIPageResumeReason,
+     * param1 is the page manager
+     */
+    ZFOBSERVER_EVENT(PageAfterResume)
+    /**
+     * @brief see #ZFObject::observerNotify
+     *
+     * called when page paused,
+     * sender is the page,
      * param0 is #ZFUIPagePauseReason,
      * param1 is the page manager
      */
     ZFOBSERVER_EVENT(PageBeforePause)
+    /**
+     * @brief see #ZFObject::observerNotify
+     *
+     * called when page paused,
+     * sender is the page,
+     * param0 is #ZFUIPagePauseReason,
+     * param1 is the page manager
+     */
+    ZFOBSERVER_EVENT(PageAfterPause)
     /**
      * @brief see #ZFObject::observerNotify
      *
@@ -174,20 +191,20 @@ public:
      *
      * it's useful to disable user interaction when manager is doing some heavy works,
      * such as animating switching pages\n
-     * subclass should override #managerUIEnableOnChange to achieve actual state change\n
+     * subclass should override #managerUIBlockedOnChange to achieve actual state change\n
      * this method can be embeded but must be paired,
      * last time you call this method to restore enable state would finally restore enable state
      */
-    zffinal void managerUIEnableSet(ZF_IN zfbool value);
+    zffinal void managerUIBlockedSet(ZF_IN zfbool value);
     /**
-     * @brief see #managerUIEnableSet
+     * @brief see #managerUIBlockedSet
      */
-    zffinal zfbool managerUIEnable(void);
+    zffinal zfindex managerUIBlocked(void);
 protected:
-    /** @brief see #EventManagerUIEnableOnChange, subclass should implement and achieve actual action */
-    virtual void managerUIEnableOnChange(void)
+    /** @brief see #EventManagerUIBlockedOnChange, subclass should implement and achieve actual action */
+    virtual void managerUIBlockedOnChange(void)
     {
-        this->toObject()->observerNotify(ZFUIPageManager::EventManagerUIEnableOnChange());
+        this->toObject()->observerNotify(ZFUIPageManager::EventManagerUIBlockedOnChange());
     }
 
     // ============================================================
@@ -308,19 +325,19 @@ public:
      * @brief block request to prevent multiple request running at same time
      *
      * newly posted request would be queued, until restored\n
-     * #managerBlockRequest can be embeded with more than one time,
+     * #requestBlockedSet can be embeded with more than one time,
      * but must be paired
      */
-    zffinal void managerBlockRequest(ZF_IN zfbool blockRequest);
+    zffinal void requestBlockedSet(ZF_IN zfbool value);
     /**
-     * @brief see #managerBlockRequest
+     * @brief see #requestBlockedSet
      */
-    zffinal zfbool managerBlockRequestIsActive(void);
+    zffinal zfindex requestBlocked(void);
 protected:
-    /** @brief see #EventManagerBlockRequestOnChange */
-    virtual inline void managerBlockRequestOnChange(void)
+    /** @brief see #EventRequestBlockedOnChange */
+    virtual inline void requestBlockedOnChange(void)
     {
-        this->toObject()->observerNotify(ZFUIPageManager::EventManagerBlockRequestOnChange());
+        this->toObject()->observerNotify(ZFUIPageManager::EventRequestBlockedOnChange());
     }
 
     // ============================================================
@@ -335,16 +352,16 @@ protected:
      * for custom request, you should check the request's class type, and do your own work
      */
     virtual void requestOnResolve(ZF_IN ZFUIPageRequest *request);
-    /** @brief see #EventManagerRequestOnResolveFinish */
+    /** @brief see #EventRequestOnResolveFinish */
     virtual inline void requestOnResolveFinish(ZF_IN ZFUIPageRequest *pageRequest)
     {
-        this->toObject()->observerNotify(ZFUIPageManager::EventManagerRequestOnResolveFinish(), pageRequest);
-        pageRequest->observerNotifyWithCustomSender(this->toObject(), ZFUIPageManager::EventManagerRequestOnResolveFinish(), pageRequest);
+        this->toObject()->observerNotify(ZFUIPageManager::EventRequestOnResolveFinish(), pageRequest);
+        pageRequest->observerNotifyWithCustomSender(this->toObject(), ZFUIPageManager::EventRequestOnResolveFinish(), pageRequest);
     }
-    /** @brief see #EventManagerRequestOnResolveFinishAll */
+    /** @brief see #EventRequestOnResolveFinishAll */
     virtual inline void requestOnResolveFinishAll(void)
     {
-        this->toObject()->observerNotify(ZFUIPageManager::EventManagerRequestOnResolveFinishAll());
+        this->toObject()->observerNotify(ZFUIPageManager::EventRequestOnResolveFinishAll());
     }
 
 protected:
@@ -491,6 +508,14 @@ protected:
             zfnull,
             this->toObject());
     }
+    /** @brief see #EventPageBeforeResume */
+    virtual void pageBeforeResume(ZF_IN ZFUIPage *page, ZF_IN ZFUIPageResumeReasonEnum reason)
+    {
+        this->toObject()->observerNotifyWithCustomSender(
+            page->toObject(), ZFUIPageManager::EventPageBeforeResume(),
+            zflineAllocWithoutLeakTest(ZFUIPageResumeReason, reason),
+            this->toObject());
+    }
     /** @brief see #EventPageAfterResume */
     virtual void pageAfterResume(ZF_IN ZFUIPage *page, ZF_IN ZFUIPageResumeReasonEnum reason)
     {
@@ -504,6 +529,14 @@ protected:
     {
         this->toObject()->observerNotifyWithCustomSender(
             page->toObject(), ZFUIPageManager::EventPageBeforePause(),
+            zflineAllocWithoutLeakTest(ZFUIPagePauseReason, reason),
+            this->toObject());
+    }
+    /** @brief see #EventPageAfterPause */
+    virtual void pageAfterPause(ZF_IN ZFUIPage *page, ZF_IN ZFUIPagePauseReasonEnum reason)
+    {
+        this->toObject()->observerNotifyWithCustomSender(
+            page->toObject(), ZFUIPageManager::EventPageAfterPause(),
             zflineAllocWithoutLeakTest(ZFUIPagePauseReason, reason),
             this->toObject());
     }

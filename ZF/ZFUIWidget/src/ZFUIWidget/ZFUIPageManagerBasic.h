@@ -143,6 +143,8 @@ protected:
     virtual void pageOnDestroy(ZF_IN ZFUIPage *page);
     zfoverride
     virtual void pageAfterResume(ZF_IN ZFUIPage *page, ZF_IN ZFUIPageResumeReasonEnum reason);
+    zfoverride
+    virtual void pageAfterPause(ZF_IN ZFUIPage *page, ZF_IN ZFUIPagePauseReasonEnum reason);
 
     // ============================================================
     // events

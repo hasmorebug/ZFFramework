@@ -72,7 +72,7 @@ private:
         ZFEnum *reason = userData->tagGet<ZFEnum *>(zfText("reason"));
         ZFUIPageManagerBasic *pageManager = page->pageManager<ZFUIPageManagerBasic *>();
 
-        page->pageManager()->managerUIEnableSet(zffalse);
+        page->pageManager()->managerUIBlockedSet(zftrue);
         ZFAnimation *pageAni = listenerData.sender->to<ZFAnimation *>();
         page->pageAniOnStart(pageAni, reason);
         pageManager->pageAniOnStart(page, pageAni, reason);
@@ -87,7 +87,7 @@ private:
         page->pageAniOnStop(pageAni, reason);
         pageManager->pageAniOnStop(page, pageAni, reason);
 
-        page->pageManager()->managerUIEnableSet(zftrue);
+        page->pageManager()->managerUIBlockedSet(zffalse);
     }
 
 public:
@@ -363,10 +363,21 @@ void ZFUIPageManagerBasic::pageAfterResume(ZF_IN ZFUIPage *page, ZF_IN ZFUIPageR
     zfsuperI(ZFUIPageManager)::pageAfterResume(page, reason);
     this->pageOnAttach(page, reason);
 
-    ZFUIPageBasic *pageTmp = page->toAny();
+    ZFUIPageBasic *pageTmp = page->to<ZFUIPageBasic *>();
     d->pageAniUpdate(pageTmp, (d->pageLastResume == pageTmp) ? zfnull : d->pageLastResume, reason);
 
     d->pageLastResume = pageTmp;
+}
+void ZFUIPageManagerBasic::pageAfterPause(ZF_IN ZFUIPage *page, ZF_IN ZFUIPagePauseReasonEnum reason)
+{
+    zfsuperI(ZFUIPageManager)::pageAfterPause(page, reason);
+
+    if(reason == ZFUIPagePauseReason::e_BeforeDestroy && this->pageCount() == 1)
+    {
+        // last page won't cause pageAfterResume to be called,
+        // update it here
+        d->pageAniUpdate(zfnull, page->to<ZFUIPageBasic *>(), ZFUIPageResumeReason::e_FromBackground);
+    }
 }
 
 ZF_NAMESPACE_GLOBAL_END
