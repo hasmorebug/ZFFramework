@@ -285,7 +285,7 @@ private:
                 {
                     this->add(flags.xmlToken.xmlTextCDATATagLeft);
                 }
-                this->add(data.xmlItem->xmlValue());
+                this->addEncoded(data.xmlItem->xmlValue());
                 break;
             case ZFXmlVisitType::e_Exit:
                 if(data.xmlItem->xmlTextCDATA())
@@ -420,9 +420,16 @@ private:
 private:
     inline void add(const zfchar *s)
     {
-        if(s != zfnull)
+        if(s)
         {
             this->outputCallback.execute(s);
+        }
+    }
+    inline void addEncoded(const zfchar *s)
+    {
+        if(s)
+        {
+            ZFXmlEscapeCharEncode(this->outputCallback, s);
         }
     }
     void addIndent(const zfchar *xmlIndentToken, zfindex indentLevel = 1)
