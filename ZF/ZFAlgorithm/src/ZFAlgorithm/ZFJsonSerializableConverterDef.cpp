@@ -38,7 +38,7 @@ ZF_NAMESPACE_GLOBAL_BEGIN
 ZFSERIALIZABLEDATA_REFERENCE_TYPE_DEFINE(ZFSerializableDataRefType_json, serializableData, data, outErrorHintToAppend)
 {
     ZFJsonItem jsonObject = ZFJsonFromInput(ZFInputCallbackForFileDescriptor(data));
-    if(jsonObject.jsonType() == ZFJsonType::e_JsonNull)
+    if(jsonObject.jsonIsNull())
     {
         ZFSerializableUtil::errorOccurred(outErrorHintToAppend,
             zfText("failed to load json object from \"%s\""), data);
@@ -50,7 +50,7 @@ ZFSERIALIZABLEDATA_REFERENCE_TYPE_DEFINE(ZFSerializableDataRefType_json, seriali
 ZFOBJECT_CREATOR_DEFINE(ZFObjectCreatorType_json, data)
 {
     ZFJsonItem jsonObject = ZFJsonFromInput(ZFInputCallbackForFileDescriptor(data));
-    if(jsonObject.jsonType() == ZFJsonType::e_JsonNull)
+    if(jsonObject.jsonIsNull())
     {
         return zfautoObjectNull;
     }
@@ -63,11 +63,11 @@ ZFOBJECT_CREATOR_DEFINE(ZFObjectCreatorType_json, data)
 }
 
 zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
-                                     ZF_IN const ZFJsonItem *jsonObject,
+                                     ZF_IN const ZFJsonItem &jsonObject,
                                      ZF_OUT_OPT zfstring *outErrorHintToAppend /* = zfnull */,
-                                     ZF_OUT_OPT const ZFJsonItem **outErrorPos /* = zfnull */)
+                                     ZF_OUT_OPT ZFJsonItem *outErrorPos /* = zfnull */)
 {
-    if(jsonObject == zfnull)
+    if(jsonObject.jsonIsNull())
     {
         ZFSerializableUtil::errorOccurred(outErrorHintToAppend, zfText("null json object"));
         if(outErrorPos != zfnull)
@@ -77,21 +77,20 @@ zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData
         return zffalse;
     }
 
-    const ZFJsonItem *elementJsonArray = zfnull;
-    for(zfiterator jsonItemIt = jsonObject->jsonItemIterator(); jsonObject->jsonItemIteratorIsValid(jsonItemIt); jsonObject->jsonItemIteratorNext(jsonItemIt))
+    ZFJsonItem elementJsonArray;
+    for(zfiterator jsonItemIt = jsonObject.jsonItemIterator(); jsonObject.jsonItemIteratorIsValid(jsonItemIt); jsonObject.jsonItemIteratorNext(jsonItemIt))
     {
-        const zfchar *key = jsonObject->jsonItemIteratorGetKey(jsonItemIt);
-        const ZFJsonItem *jsonItem = jsonObject->jsonItemIteratorGet(jsonItemIt);
-        zfassert(jsonItem != zfnull);
+        const zfchar *key = jsonObject.jsonItemIteratorGetKey(jsonItemIt);
+        ZFJsonItem jsonItem = jsonObject.jsonItemIteratorGet(jsonItemIt);
         if(*key == _ZFP_ZFJsonSerializeKey_classPrefix)
         {
             serializableData.itemClassSet(key + 1);
 
-            if(jsonItem->jsonType() != ZFJsonType::e_JsonArray)
+            if(jsonItem.jsonType() != ZFJsonType::e_JsonArray)
             {
                 ZFSerializableUtil::errorOccurred(outErrorHintToAppend,
                     zfText("json item %s not type of %s"),
-                    jsonItem->objectInfo().cString(),
+                    jsonItem.objectInfo().cString(),
                     ZFJsonType::EnumNameForValue(ZFJsonType::e_JsonArray));
                 if(outErrorPos != zfnull)
                 {
@@ -103,11 +102,11 @@ zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData
         }
         else
         {
-            if(jsonItem->jsonType() != ZFJsonType::e_JsonValue)
+            if(jsonItem.jsonType() != ZFJsonType::e_JsonValue)
             {
                 ZFSerializableUtil::errorOccurred(outErrorHintToAppend,
                     zfText("json item %s not type of %s"),
-                    jsonItem->objectInfo().cString(),
+                    jsonItem.objectInfo().cString(),
                     ZFJsonType::EnumNameForValue(ZFJsonType::e_JsonValue));
                 if(outErrorPos != zfnull)
                 {
@@ -115,7 +114,7 @@ zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData
                 }
                 return zffalse;
             }
-            const zfchar *value = jsonItem->jsonValue();
+            const zfchar *value = jsonItem.jsonValue();
 
             if(zfscmpTheSame(key, ZFSerializableKeyword_refType))
             {
@@ -142,12 +141,12 @@ zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData
         return zffalse;
     }
 
-    if(elementJsonArray != zfnull)
+    if(!elementJsonArray.jsonIsNull())
     {
-        for(zfindex i = 0; i < elementJsonArray->jsonObjectCount(); ++i)
+        for(zfindex i = 0; i < elementJsonArray.jsonObjectCount(); ++i)
         {
             ZFSerializableData childData;
-            if(!ZFJsonParseToSerializableData(childData, elementJsonArray->jsonObjectAtIndex(i), outErrorHintToAppend, outErrorPos))
+            if(!ZFJsonParseToSerializableData(childData, elementJsonArray.jsonObjectAtIndex(i), outErrorHintToAppend, outErrorPos))
             {
                 return zffalse;
             }
@@ -155,15 +154,11 @@ zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData
         }
     }
 
-    if(outErrorPos != zfnull)
-    {
-        *outErrorPos = zfnull;
-    }
     return serializableData.referenceCheckLoad(outErrorHintToAppend, zfnull);
 }
-ZFSerializableData ZFJsonParseToSerializableData(ZF_IN const ZFJsonItem *jsonObject,
+ZFSerializableData ZFJsonParseToSerializableData(ZF_IN const ZFJsonItem &jsonObject,
                                                  ZF_OUT_OPT zfstring *outErrorHintToAppend /* = zfnull */,
-                                                 ZF_OUT_OPT const ZFJsonItem **outErrorPos /* = zfnull */)
+                                                 ZF_OUT_OPT ZFJsonItem *outErrorPos /* = zfnull */)
 {
     ZFSerializableData ret;
     if(ZFJsonParseToSerializableData(ret, jsonObject, outErrorHintToAppend, outErrorPos))
@@ -181,7 +176,7 @@ zfbool ZFJsonPrintFromSerializableData(ZF_OUT ZFJsonItem &jsonObject,
                                        ZF_OUT_OPT const ZFSerializableData **outErrorPos /* = zfnull */)
 {
     jsonObject = ZFJsonPrintFromSerializableData(serializableData, outErrorHintToAppend, outErrorPos);
-    return (jsonObject.jsonType() != ZFJsonType::e_JsonNull);
+    return !jsonObject.jsonIsNull();
 }
 ZFJsonItem ZFJsonPrintFromSerializableData(ZF_IN const ZFSerializableData &serializableData,
                                            ZF_OUT_OPT zfstring *outErrorHintToAppend /* = zfnull */,
@@ -220,7 +215,7 @@ ZFJsonItem ZFJsonPrintFromSerializableData(ZF_IN const ZFSerializableData &seria
         {
             return ZFJsonItem();
         }
-        elementJsonArray->jsonObjectAdd(child);
+        elementJsonArray.jsonObjectAdd(child);
     }
     zfstring t;
     t += _ZFP_ZFJsonSerializeKey_classPrefix;
@@ -237,7 +232,7 @@ void ZFJsonPrint(ZF_IN const ZFSerializableData &serializableData,
                  ZF_IN_OPT const ZFJsonOutputFlags &flags /* = ZFJsonOutputFlagsDefault */)
 {
     ZFJsonItem jsonObject = ZFJsonPrintFromSerializableData(serializableData);
-    if(jsonObject.jsonType() != ZFJsonType::e_JsonNull)
+    if(!jsonObject.jsonIsNull())
     {
         ZFJsonToOutput(outputCallback, jsonObject, flags);
         outputCallback.execute(zfText("\n"));

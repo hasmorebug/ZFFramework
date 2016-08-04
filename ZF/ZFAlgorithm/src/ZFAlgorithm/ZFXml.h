@@ -145,7 +145,7 @@ ZFENUM_END(ZFXmlVisitType)
 /**
  * @brief visit data when visiting a xml item, used in #ZFXmlVisitCallback
  */
-zfclassPOD ZF_ENV_EXPORT ZFXmlVisitData
+zfclassLikePOD ZF_ENV_EXPORT ZFXmlVisitData
 {
 public:
     /**
@@ -346,32 +346,25 @@ zfclassFwd _ZFP_ZFXmlItemPrivate;
 zffinal zfclassLikePOD ZF_ENV_EXPORT ZFXmlItem
 {
     // ============================================================
-private:
-    void _ZFP_ZFXmlItemOnDelete(void);
 public:
-    /** @cond ZFPrivateDoc */
-    ZFXmlItem(ZF_IN _ZFP_ZFXmlItemPrivate *d);
-    /** @endcond */
     /** @brief construct a null item */
     ZFXmlItem(void);
     /** @brief construct with specified type */
     ZFXmlItem(ZF_IN ZFXmlTypeEnum xmlType);
     /** @brief retain from other item */
     ZFXmlItem(ZF_IN const ZFXmlItem &ref);
-    /** @brief retain from other item */
-    ZFXmlItem(ZF_IN const ZFXmlItem *ref);
     virtual ~ZFXmlItem(void);
 
     /** @cond ZFPrivateDoc */
     ZFXmlItem &operator = (ZF_IN const ZFXmlItem &ref);
-    ZFXmlItem &operator = (ZF_IN const ZFXmlItem *ref);
     zfbool operator == (ZF_IN const ZFXmlItem &ref) const;
-    zfbool operator == (ZF_IN const ZFXmlItem *ref) const;
-    inline operator ZFXmlItem *(void) {return this;}
-    inline operator const ZFXmlItem *(void) const {return this;}
-    inline ZFXmlItem *operator ->(void) {return this;}
-    inline const ZFXmlItem *operator ->(void) const {return this;}
+    zfbool operator != (ZF_IN const ZFXmlItem &ref) const {return !(this->operator == (ref));}
     /** @endcond */
+private:
+    zfbool operator == (ZF_IN const zfchar *ref) const;
+    zfbool operator != (ZF_IN const zfchar *ref) const;
+    zfbool operator == (ZF_IN zfint ref) const;
+    zfbool operator != (ZF_IN zfint ref) const;
 
     // ============================================================
 public:
@@ -394,25 +387,21 @@ public:
     // ============================================================
 public:
     /**
-     * @brief for impl to store additional data, null to remove
-     */
-    void implTagSet(ZF_IN const zfchar *key, ZF_IN const zfchar *value);
-    /**
-     * @brief see #implTagSet
-     */
-    const zfchar *implTag(ZF_IN const zfchar *key) const;
-
-    // ============================================================
-public:
-    /**
      * @brief type of this item
      */
     ZFXmlTypeEnum xmlType(void) const;
+    /**
+     * @brief true if #xmlType is #ZFXmlType::e_XmlNull
+     */
+    inline zfbool xmlIsNull(void) const
+    {
+        return (this->xmlType() == ZFXmlType::e_XmlNull);
+    }
 
     /**
-     * @brief access parent of this node, return true if parent exists
+     * @brief access parent of this node
      */
-    zfbool xmlParent(ZF_OUT ZFXmlItem &ret) const;
+    ZFXmlItem xmlParent(void) const;
 
 public:
     /**
@@ -455,6 +444,9 @@ public:
      */
     const zfchar *xmlValue(void) const;
 
+    zffinal void _ZFP_ZFXml_xmlMemoryPool_xmlNameSet(ZF_IN const zfchar *xmlName, ZF_IN void *token);
+    zffinal void _ZFP_ZFXml_xmlMemoryPool_xmlValueSet(ZF_IN const zfchar *xmlValue, ZF_IN void *token);
+
     // ============================================================
 public:
     /**
@@ -483,98 +475,58 @@ public:
      */
     ZFXmlItem xmlCloneTree(void) const;
 
-    /**
-     * @brief true if node is equal, compare attribute but ignore all children
-     *
-     * note that the order of attributes need to be same if equal
-     */
-    zfbool xmlIsEqual(ZF_IN const ZFXmlItem *anotherNode) const;
-    /**
-     * @brief true if node and all its children is equal
-     *
-     * note that the order of attributes and children need to be same if equal
-     * @note since comparing a tree need recursively compare,
-     *   this function may be very slow
-     */
-    zfbool xmlIsEqualTree(ZF_IN const ZFXmlItem *anotherNode) const;
-
     // ============================================================
 public:
     /**
      * @brief add attribute before beforeThis or add to tail if beforeThis is null
      */
-    void xmlAttributeAdd(ZF_IN ZFXmlItem *addThis,
-                         ZF_IN_OPT ZFXmlItem *beforeThis = zfnull);
+    void xmlAttributeAdd(ZF_IN const ZFXmlItem &addThis,
+                         ZF_IN_OPT const ZFXmlItem *beforeThis = zfnull);
     /**
      * @brief util method to add attribute, do nothing if key or value is null
      */
     void xmlAttributeAdd(ZF_IN const zfchar *key,
                          ZF_IN const zfchar *value,
-                         ZF_IN_OPT ZFXmlItem *beforeThis = zfnull);
+                         ZF_IN_OPT const ZFXmlItem *beforeThis = zfnull);
     /**
      * @brief remove attribute or do nothing if not in this node
      */
-    void xmlAttributeRemove(ZF_IN ZFXmlItem *removeThis);
+    void xmlAttributeRemove(ZF_IN const ZFXmlItem &removeThis);
     /**
-     * @brief remove all attribute with name
+     * @brief remove attribute with name
      */
-    void xmlAttributeRemoveAll(ZF_IN const zfchar *name = zfnull);
+    void xmlAttributeRemove(ZF_IN const zfchar *name);
+    /**
+     * @brief remove all attribute
+     */
+    void xmlAttributeRemoveAll(void);
 
     /**
-     * @brief get first attribute with name after afterThis or null if none
+     * @brief get attribute with name
      */
-    ZFXmlItem *xmlAttributeFirst(ZF_IN_OPT const zfchar *name = zfnull,
-                                 ZF_IN_OPT ZFXmlItem *afterThis = zfnull);
+    ZFXmlItem xmlAttribute(ZF_IN const zfchar *name) const;
     /**
-     * @brief get first attribute with name after afterThis or null if none
+     * @brief get attribute value with name
      */
-    const ZFXmlItem *xmlAttributeFirst(ZF_IN_OPT const zfchar *name = zfnull,
-                                       ZF_IN_OPT ZFXmlItem *afterThis = zfnull) const;
-    /**
-     * @brief get last attribute with name before beforeThis or null if none
-     */
-    ZFXmlItem *xmlAttributeLast(ZF_IN_OPT const zfchar *name = zfnull,
-                                ZF_IN_OPT ZFXmlItem *beforeThis = zfnull);
-    /**
-     * @brief get last attribute with name before beforeThis or null if none
-     */
-    const ZFXmlItem *xmlAttributeLast(ZF_IN_OPT const zfchar *name = zfnull,
-                                      ZF_IN_OPT ZFXmlItem *beforeThis = zfnull) const;
+    const zfchar *xmlAttributeValue(ZF_IN const zfchar *name) const;
 
     /**
-     * @brief util method to get attribute value
+     * @brief get first attribute
      */
-    const zfchar *xmlAttributeValue(ZF_IN const zfchar *key) const
-    {
-        return this->xmlAttributeValueFirst(key);
-    }
+    ZFXmlItem xmlAttributeFirst(void) const;
     /**
-     * @brief util method to get attribute value
+     * @brief get last attribute
      */
-    const zfchar *xmlAttributeValueFirst(ZF_IN const zfchar *key,
-                                         ZF_IN_OPT ZFXmlItem *afterThis = zfnull) const;
-    /**
-     * @brief util method to get attribute value
-     */
-    const zfchar *xmlAttributeValueLast(ZF_IN const zfchar *key,
-                                        ZF_IN_OPT ZFXmlItem *beforeThis = zfnull) const;
+    ZFXmlItem xmlAttributeLast(void) const;
 
     /**
-     * @brief get next attribute with name or null if none
+     * @brief get next attribute
      */
-    ZFXmlItem *xmlAttributeNext(ZF_IN_OPT const zfchar *name = zfnull);
+    ZFXmlItem xmlAttributeNext(void) const;
     /**
-     * @brief get next attribute with name or null if none
+     * @brief get prev attribute
      */
-    const ZFXmlItem *xmlAttributeNext(ZF_IN_OPT const zfchar *name = zfnull) const;
-    /**
-     * @brief get prev attribute with name or null if none
-     */
-    ZFXmlItem *xmlAttributePrev(ZF_IN_OPT const zfchar *name = zfnull);
-    /**
-     * @brief get prev attribute with name or null if none
-     */
-    const ZFXmlItem *xmlAttributePrev(ZF_IN_OPT const zfchar *name = zfnull) const;
+    ZFXmlItem xmlAttributePrev(void) const;
 
     // ============================================================
 public:
@@ -592,91 +544,55 @@ public:
     /**
      * @brief add child before beforeThis or add to tail if beforeThis is null
      */
-    void xmlChildAdd(ZF_IN ZFXmlItem *addThis,
-                     ZF_IN_OPT ZFXmlItem *beforeThis = zfnull);
+    void xmlChildAdd(ZF_IN const ZFXmlItem &addThis,
+                     ZF_IN_OPT const ZFXmlItem *beforeThis = zfnull);
     /**
      * @brief remove child or do nothing if not in this node
      */
-    void xmlChildRemove(ZF_IN ZFXmlItem *removeThis);
+    void xmlChildRemove(ZF_IN const ZFXmlItem &removeThis);
     /**
      * @brief remove all child
      */
-    void xmlChildRemoveAll(ZF_IN const zfchar *name = zfnull);
+    void xmlChildRemoveAll(void);
 
     /**
      * @brief get first child with name after afterThis or null if none
      */
-    ZFXmlItem *xmlChildFirst(ZF_IN_OPT const zfchar *name = zfnull,
-                             ZF_IN_OPT ZFXmlItem *afterThis = zfnull);
-    /**
-     * @brief get first child with name after afterThis or null if none
-     */
-    const ZFXmlItem *xmlChildFirst(ZF_IN_OPT const zfchar *name = zfnull,
-                                   ZF_IN_OPT ZFXmlItem *afterThis = zfnull) const;
+    ZFXmlItem xmlChildFirst(ZF_IN_OPT const zfchar *name = zfnull,
+                            ZF_IN_OPT const ZFXmlItem *afterThis = zfnull) const;
     /**
      * @brief get last child with name before beforeThis or null if none
      */
-    ZFXmlItem *xmlChildLast(ZF_IN_OPT const zfchar *name = zfnull,
-                            ZF_IN_OPT ZFXmlItem *beforeThis = zfnull);
-    /**
-     * @brief get last child with name before beforeThis or null if none
-     */
-    const ZFXmlItem *xmlChildLast(ZF_IN_OPT const zfchar *name = zfnull,
-                                  ZF_IN_OPT ZFXmlItem *beforeThis = zfnull) const;
+    ZFXmlItem xmlChildLast(ZF_IN_OPT const zfchar *name = zfnull,
+                           ZF_IN_OPT const ZFXmlItem *beforeThis = zfnull) const;
     /**
      * @brief util function to #xmlChildFirst, to get first child element
      */
-    ZFXmlItem *xmlChildElementFirst(ZF_IN_OPT const zfchar *name = zfnull,
-                                    ZF_IN_OPT ZFXmlItem *afterThis = zfnull);
-    /**
-     * @brief util function to #xmlChildFirst, to get first child element
-     */
-    const ZFXmlItem *xmlChildElementFirst(ZF_IN_OPT const zfchar *name = zfnull,
-                                          ZF_IN_OPT ZFXmlItem *afterThis = zfnull) const;
+    ZFXmlItem xmlChildElementFirst(ZF_IN_OPT const zfchar *name = zfnull,
+                                   ZF_IN_OPT const ZFXmlItem *afterThis = zfnull) const;
     /**
      * @brief util function to #xmlChildLast, to get last child element
      */
-    ZFXmlItem *xmlChildElementLast(ZF_IN_OPT const zfchar *name = zfnull,
-                                   ZF_IN_OPT ZFXmlItem *beforeThis = zfnull);
-    /**
-     * @brief util function to #xmlChildLast, to get last child element
-     */
-    const ZFXmlItem *xmlChildElementLast(ZF_IN_OPT const zfchar *name = zfnull,
-                                         ZF_IN_OPT ZFXmlItem *beforeThis = zfnull) const;
+    ZFXmlItem xmlChildElementLast(ZF_IN_OPT const zfchar *name = zfnull,
+                                  ZF_IN_OPT const ZFXmlItem *beforeThis = zfnull) const;
 
     /**
      * @brief get next sibling with name or null if none
      */
-    ZFXmlItem *xmlSiblingNext(ZF_IN const zfchar *name = zfnull);
-    /**
-     * @brief get next sibling with name or null if none
-     */
-    const ZFXmlItem *xmlSiblingNext(ZF_IN const zfchar *name = zfnull) const;
+    ZFXmlItem xmlSiblingNext(ZF_IN const zfchar *name = zfnull) const;
     /**
      * @brief get prev sibling with name or null if none
      */
-    ZFXmlItem *xmlSiblingPrev(ZF_IN const zfchar *name = zfnull);
-    /**
-     * @brief get prev sibling with name or null if none
-     */
-    const ZFXmlItem *xmlSiblingPrev(ZF_IN const zfchar *name = zfnull) const;
+    ZFXmlItem xmlSiblingPrev(ZF_IN const zfchar *name = zfnull) const;
 
     /**
      * @brief util function to #xmlSiblingNext, to get next sibling element
      */
-    ZFXmlItem *xmlSiblingElementNext(ZF_IN const zfchar *name = zfnull);
-    /**
-     * @brief util function to #xmlSiblingNext, to get next sibling element
-     */
-    const ZFXmlItem *xmlSiblingElementNext(ZF_IN const zfchar *name = zfnull) const;
+    ZFXmlItem xmlSiblingElementNext(ZF_IN const zfchar *name = zfnull) const;
     /**
      * @brief util function to #xmlSiblingPrev, to get prev sibling element
      */
-    ZFXmlItem *xmlSiblingElementPrev(ZF_IN const zfchar *name = zfnull);
-    /**
-     * @brief util function to #xmlSiblingPrev, to get prev sibling element
-     */
-    const ZFXmlItem *xmlSiblingElementPrev(ZF_IN const zfchar *name = zfnull) const;
+    ZFXmlItem xmlSiblingElementPrev(ZF_IN const zfchar *name = zfnull) const;
 
     // ============================================================
 public:
@@ -691,6 +607,8 @@ public:
 
 private:
     _ZFP_ZFXmlItemPrivate *d;
+private:
+    ZFXmlItem(ZF_IN _ZFP_ZFXmlItemPrivate *ref);
 };
 
 // ============================================================
@@ -731,7 +649,7 @@ inline ZFXmlItem ZFXmlParseFirstElement(ZF_IN const zfchar *src,
  *   if source is not valid
  */
 extern ZF_ENV_EXPORT zfbool ZFXmlToOutput(ZF_IN_OUT const ZFOutputCallback &output,
-                                          ZF_IN const ZFXmlItem *xmlItem,
+                                          ZF_IN const ZFXmlItem &xmlItem,
                                           ZF_IN_OPT const ZFXmlOutputFlags &outputFlags = ZFXmlOutputFlagsDefault);
 /**
  * @brief convert xml to string
@@ -740,13 +658,13 @@ extern ZF_ENV_EXPORT zfbool ZFXmlToOutput(ZF_IN_OUT const ZFOutputCallback &outp
  *   if source is not valid
  */
 inline zfbool ZFXmlToString(ZF_IN_OUT zfstring &ret,
-                            ZF_IN const ZFXmlItem *xmlItem,
+                            ZF_IN const ZFXmlItem &xmlItem,
                             ZF_IN_OPT const ZFXmlOutputFlags &outputFlags = ZFXmlOutputFlagsDefault)
 {
     return ZFXmlToOutput(ZFOutputCallbackForString(ret), xmlItem, outputFlags);
 }
 /** @brief see #ZFXmlToString */
-inline zfstring ZFXmlToString(ZF_IN const ZFXmlItem *xmlItem,
+inline zfstring ZFXmlToString(ZF_IN const ZFXmlItem &xmlItem,
                               ZF_IN_OPT const ZFXmlOutputFlags &outputFlags = ZFXmlOutputFlagsDefault)
 {
     zfstring ret;
@@ -796,6 +714,5 @@ extern ZF_ENV_EXPORT void ZFXmlEscapeCharDecode(ZF_OUT const ZFOutputCallback &d
 ZF_NAMESPACE_GLOBAL_END
 #endif // #ifndef _ZFI_ZFXml_h_
 
-#include "ZFXmlHandle.h"
 #include "ZFXmlSerializableConverterDef.h"
 

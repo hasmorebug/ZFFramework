@@ -98,9 +98,11 @@ private:
             fromDataTimes,
             ZFTimeValueToStringFriendly(fromDataUsedTime).cString());
 
-        this->testCaseOutputSeparator();
-        this->testCaseOutput(zfText("content: %s"), jsonString.cString());
-        this->testCaseOutput(zfText("newly: %s"), ZFJsonToString(jsonItemNew).cString());
+        #if 0
+            this->testCaseOutputSeparator();
+            this->testCaseOutput(zfText("content: %s"), jsonString.cString());
+            this->testCaseOutput(zfText("newly: %s"), ZFJsonToString(jsonItemNew).cString());
+        #endif
 
         ZFCoreStatistic::invokeTimeAccurateRemove(zfText("ZFJsonPerformance_test_toData"));
         ZFCoreStatistic::invokeTimeAccurateRemove(zfText("ZFJsonPerformance_test_fromData"));

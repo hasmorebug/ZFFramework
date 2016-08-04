@@ -55,15 +55,15 @@ ZFOUTPUT_TYPE(ZFXmlItem *, {output << (const ZFXmlItem *)v;})
  * @brief parse xml formated data to serializable
  */
 extern ZF_ENV_EXPORT zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
-                                                         ZF_IN const ZFXmlItem *xmlElement,
+                                                         ZF_IN const ZFXmlItem &xmlElement,
                                                          ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                         ZF_OUT_OPT const ZFXmlItem **outErrorPos = zfnull);
+                                                         ZF_OUT_OPT ZFXmlItem *outErrorPos = zfnull);
 /**
  * @brief see #ZFXmlParseToSerializableData
  */
-extern ZF_ENV_EXPORT ZFSerializableData ZFXmlParseToSerializableData(ZF_IN const ZFXmlItem *xmlElement,
+extern ZF_ENV_EXPORT ZFSerializableData ZFXmlParseToSerializableData(ZF_IN const ZFXmlItem &xmlElement,
                                                                      ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                                     ZF_OUT_OPT const ZFXmlItem **outErrorPos = zfnull);
+                                                                     ZF_OUT_OPT ZFXmlItem *outErrorPos = zfnull);
 /**
  * @brief print serializable to xml formated data
  */

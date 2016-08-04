@@ -76,6 +76,18 @@ ZFENUM_END(ZFJsonType)
 
 // ============================================================
 /**
+ * @brief flags used when parsing document
+ */
+zfclassPOD ZF_ENV_EXPORT ZFJsonParseFlags
+{
+};
+/**
+ * @brief default parse flags
+ */
+extern ZF_ENV_EXPORT const ZFJsonParseFlags ZFJsonParseFlagsDefault;
+
+// ============================================================
+/**
  * @brief token for output json
  */
 zfclassLikePOD ZF_ENV_EXPORT ZFJsonOutputToken
@@ -185,6 +197,7 @@ extern ZF_ENV_EXPORT const ZFJsonOutputFlags &_ZFP_ZFJsonOutputFlagsTrim();
 #define ZFJsonOutputFlagsTrim _ZFP_ZFJsonOutputFlagsTrim()
 
 // ============================================================
+// ZFJsonItem
 zfclassFwd _ZFP_ZFJsonItemPrivate;
 /**
  * @brief JSON item
@@ -192,32 +205,25 @@ zfclassFwd _ZFP_ZFJsonItemPrivate;
 zfclassLikePOD ZF_ENV_EXPORT ZFJsonItem
 {
     // ============================================================
-private:
-    void _ZFP_ZFJsonItemOnDelete(void);
 public:
-    /** @cond ZFPrivateDoc */
-    ZFJsonItem(ZF_IN _ZFP_ZFJsonItemPrivate *d);
-    /** @endcond */
     /** @brief construct a null item */
     ZFJsonItem(void);
     /** @brief construct with specified type */
     ZFJsonItem(ZF_IN ZFJsonTypeEnum jsonType);
     /** @brief retain from other item */
     ZFJsonItem(ZF_IN const ZFJsonItem &ref);
-    /** @brief retain from other item */
-    ZFJsonItem(ZF_IN const ZFJsonItem *ref);
     virtual ~ZFJsonItem(void);
 
     /** @cond ZFPrivateDoc */
     ZFJsonItem &operator = (ZF_IN const ZFJsonItem &ref);
-    ZFJsonItem &operator = (ZF_IN const ZFJsonItem *ref);
     zfbool operator == (ZF_IN const ZFJsonItem &ref) const;
-    zfbool operator == (ZF_IN const ZFJsonItem *ref) const;
-    inline operator ZFJsonItem *(void) {return this;}
-    inline operator const ZFJsonItem *(void) const {return this;}
-    inline ZFJsonItem *operator ->(void) {return this;}
-    inline const ZFJsonItem *operator ->(void) const {return this;}
+    zfbool operator != (ZF_IN const ZFJsonItem &ref) const {return !(this->operator == (ref));}
     /** @endcond */
+private:
+    zfbool operator == (ZF_IN const zfchar *ref) const;
+    zfbool operator != (ZF_IN const zfchar *ref) const;
+    zfbool operator == (ZF_IN zfint ref) const;
+    zfbool operator != (ZF_IN zfint ref) const;
 
     // ============================================================
 public:
@@ -240,29 +246,29 @@ public:
     // ============================================================
 public:
     /**
-     * @brief for impl to store additional data, null to remove
-     */
-    void implTagSet(ZF_IN const zfchar *key, ZF_IN const zfchar *value);
-    /**
-     * @brief see #implTagSet
-     */
-    const zfchar *implTag(ZF_IN const zfchar *key) const;
-
-    // ============================================================
-public:
-    /**
      * @brief type of this item
      */
     ZFJsonTypeEnum jsonType(void) const;
+    /**
+     * @brief true if #jsonType is #ZFJsonType::e_JsonNull
+     */
+    inline zfbool jsonIsNull(void) const
+    {
+        return (this->jsonType() == ZFJsonType::e_JsonNull);
+    }
 
     /**
-     * @brief access parent of this node, return true if parent exists
+     * @brief access parent of this node
      */
-    zfbool jsonParent(ZF_OUT ZFJsonItem &ret) const;
+    ZFJsonItem jsonParent(void) const;
 
     // ============================================================
     // for value type
 public:
+    /**
+     * @brief key of the node, valid only if this node belongs to an object node
+     */
+    const zfchar *jsonKey(void) const;
     /**
      * @brief value of the node, valid only for value type
      */
@@ -271,6 +277,9 @@ public:
      * @brief see #jsonValueSet
      */
     const zfchar *jsonValue(void) const;
+
+    zffinal void _ZFP_ZFJson_jsonMemoryPool_jsonValueSet(ZF_IN const zfchar *value, ZF_IN void *token);
+    zffinal void _ZFP_ZFJson_jsonMemoryPool_jsonItemSet(ZF_IN const zfchar *key, ZF_IN void *token, ZF_IN const ZFJsonItem &jsonItem);
 
     // ============================================================
 public:
@@ -287,12 +296,12 @@ public:
     /**
      * @brief get json item for key
      */
-    ZFJsonItem *jsonItem(ZF_IN const zfchar *key) const;
+    ZFJsonItem jsonItem(ZF_IN const zfchar *key) const;
     /**
      * @brief set json item for key
      */
     void jsonItemSet(ZF_IN const zfchar *key,
-                     ZF_IN ZFJsonItem *jsonItem);
+                     ZF_IN const ZFJsonItem &jsonItem);
 
     /**
      * @brief util method to access json value, return a null type item if no such item or not value type
@@ -306,13 +315,16 @@ public:
     /**
      * @brief remove json item
      */
+    void jsonItemRemove(ZF_IN const ZFJsonItem &jsonItem);
+    /**
+     * @brief remove json item
+     */
     void jsonItemRemove(ZF_IN const zfchar *key);
     /**
      * @brief remove all json item
      */
     void jsonItemRemoveAll(void);
 
-public:
     /**
      * @brief json item count
      */
@@ -329,21 +341,17 @@ public:
     zfbool jsonItemIteratorIsEqual(ZF_IN const zfiterator &it0,
                                    ZF_IN const zfiterator &it1) const;
     /** @brief see #zfiterator */
-    void jsonItemIteratorSet(ZF_IN_OUT zfiterator &it, ZF_IN ZFJsonItem *jsonItem);
+    void jsonItemIteratorSet(ZF_IN_OUT zfiterator &it, ZF_IN const ZFJsonItem &jsonItem);
     /** @brief see #zfiterator */
     void jsonItemIteratorRemove(ZF_IN_OUT zfiterator &it);
     /** @brief see #zfiterator */
     const zfchar *jsonItemIteratorGetKey(ZF_IN const zfiterator &it) const;
     /** @brief see #zfiterator */
-    ZFJsonItem *jsonItemIteratorGet(ZF_IN const zfiterator &it);
-    /** @brief see #zfiterator */
-    const ZFJsonItem *jsonItemIteratorGet(ZF_IN const zfiterator &it) const;
+    ZFJsonItem jsonItemIteratorGet(ZF_IN const zfiterator &it) const;
     /** @brief see #zfiterator */
     const zfchar *jsonItemIteratorNextKey(ZF_IN_OUT zfiterator &it) const;
     /** @brief see #zfiterator */
-    ZFJsonItem *jsonItemIteratorNext(ZF_IN_OUT zfiterator &it);
-    /** @brief see #zfiterator */
-    const ZFJsonItem *jsonItemIteratorNext(ZF_IN_OUT zfiterator &it) const;
+    ZFJsonItem jsonItemIteratorNext(ZF_IN_OUT zfiterator &it) const;
 
     // ============================================================
     // for array type
@@ -355,26 +363,18 @@ public:
     /**
      * @brief get json object at index
      */
-    ZFJsonItem *jsonObjectAtIndex(ZF_IN zfindex index);
-    /**
-     * @brief get json object at index
-     */
-    const ZFJsonItem *jsonObjectAtIndex(ZF_IN zfindex index) const;
+    ZFJsonItem jsonObjectAtIndex(ZF_IN zfindex index) const;
 
 public:
     /**
-     * @brief add json object
-     */
-    void jsonObjectAdd(ZF_IN ZFJsonItem *jsonObject);
-    /**
      * @brief add json object to specified index (ranged in [0, count])
      */
-    void jsonObjectAdd(ZF_IN ZFJsonItem *jsonObject,
-                       ZF_IN zfindex atIndexOrZFIndexMax);
+    void jsonObjectAdd(ZF_IN const ZFJsonItem &jsonObject,
+                       ZF_IN_OPT zfindex atIndex = zfindexMax);
     /**
      * @brief remove json object
      */
-    void jsonObjectRemove(ZF_IN ZFJsonItem *jsonObject);
+    void jsonObjectRemove(ZF_IN const ZFJsonItem &jsonObject);
     /**
      * @brief remove json object at index
      */
@@ -386,36 +386,37 @@ public:
     /**
      * @brief find json object
      */
-    zfindex jsonObjectFind(ZF_IN const ZFJsonItem *jsonObject) const;
+    zfindex jsonObjectFind(ZF_IN const ZFJsonItem &jsonObject) const;
 
     // ============================================================
     // quick access
 public:
-    /** @cond ZFPrivateDoc */
-    // value
+    /** @brief access #jsonValue */
     operator const zfchar *(void) const {return this->jsonValue();}
-    // object
-    inline ZFJsonItem *operator [] (ZF_IN const zfchar *key) {return this->jsonItem(key);}
-    inline const ZFJsonItem *operator [] (ZF_IN const zfchar *key) const {return this->jsonItem(key);}
-    // array
-    inline ZFJsonItem *operator [] (ZF_IN zfindex const &jsonObjectIndex) {return this->jsonObjectAtIndex(jsonObjectIndex);}
-    inline const ZFJsonItem *operator [] (ZF_IN zfindex const &jsonObjectIndex) const {return this->jsonObjectAtIndex(jsonObjectIndex);}
-    /** @endcond */
+    /** @brief access #jsonItem */
+    inline ZFJsonItem operator [] (ZF_IN const zfchar *key) const {return this->jsonItem(key);}
+    /** @brief access #jsonObjectAtIndex */
+    inline ZFJsonItem operator [] (ZF_IN zfindex const &jsonObjectIndex) const {return this->jsonObjectAtIndex(jsonObjectIndex);}
 
 private:
     _ZFP_ZFJsonItemPrivate *d;
+    friend zfclassFwd _ZFP_ZFJsonItemPrivate;
+private:
+    ZFJsonItem(ZF_IN _ZFP_ZFJsonItemPrivate *ref);
 };
 
 // ============================================================
 /**
  * @brief parse json, or return an item with null type if fail
  */
-extern ZF_ENV_EXPORT ZFJsonItem ZFJsonFromInput(ZF_IN const ZFInputCallback &input);
+extern ZF_ENV_EXPORT ZFJsonItem ZFJsonFromInput(ZF_IN const ZFInputCallback &input,
+                                                ZF_IN_OPT const ZFJsonParseFlags &flags = ZFJsonParseFlagsDefault);
 /**
  * @brief parse json, or return an item with null type if fail
  */
 extern ZF_ENV_EXPORT ZFJsonItem ZFJsonFromString(ZF_IN const zfchar *src,
-                                                 ZF_IN_OPT zfindex length = zfindexMax);
+                                                 ZF_IN_OPT zfindex length = zfindexMax,
+                                                 ZF_IN_OPT const ZFJsonParseFlags &flags = ZFJsonParseFlagsDefault);
 
 /**
  * @brief convert json to output
@@ -424,7 +425,7 @@ extern ZF_ENV_EXPORT ZFJsonItem ZFJsonFromString(ZF_IN const zfchar *src,
  *   if source is not valid
  */
 extern ZF_ENV_EXPORT zfbool ZFJsonToOutput(ZF_IN_OUT const ZFOutputCallback &output,
-                                           ZF_IN const ZFJsonItem *jsonItem,
+                                           ZF_IN const ZFJsonItem &jsonItem,
                                            ZF_IN_OPT const ZFJsonOutputFlags &outputFlags = ZFJsonOutputFlagsDefault);
 /**
  * @brief convert json to string
@@ -433,13 +434,13 @@ extern ZF_ENV_EXPORT zfbool ZFJsonToOutput(ZF_IN_OUT const ZFOutputCallback &out
  *   if source is not valid
  */
 inline zfbool ZFJsonToString(ZF_IN_OUT zfstring &ret,
-                             ZF_IN const ZFJsonItem *jsonItem,
+                             ZF_IN const ZFJsonItem &jsonItem,
                              ZF_IN_OPT const ZFJsonOutputFlags &outputFlags = ZFJsonOutputFlagsDefault)
 {
     return ZFJsonToOutput(ZFOutputCallbackForString(ret), jsonItem, outputFlags);
 }
 /** @brief see #ZFJsonToString */
-inline zfstring ZFJsonToString(ZF_IN const ZFJsonItem *jsonItem,
+inline zfstring ZFJsonToString(ZF_IN const ZFJsonItem &jsonItem,
                                ZF_IN_OPT const ZFJsonOutputFlags &outputFlags = ZFJsonOutputFlagsDefault)
 {
     zfstring ret;
@@ -490,6 +491,5 @@ extern ZF_ENV_EXPORT void ZFJsonEscapeCharDecode(ZF_OUT const ZFOutputCallback &
 ZF_NAMESPACE_GLOBAL_END
 #endif // #ifndef _ZFI_ZFJson_h_
 
-#include "ZFJsonHandle.h"
 #include "ZFJsonSerializableConverterDef.h"
 

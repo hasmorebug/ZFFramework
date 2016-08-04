@@ -25,7 +25,7 @@ ZFSERIALIZABLEDATA_REFERENCE_TYPE_DEFINE(ZFSerializableDataRefType_xml, serializ
 ZFOBJECT_CREATOR_DEFINE(ZFObjectCreatorType_xml, data)
 {
     ZFXmlItem xmlElement = ZFXmlParseFirstElement(ZFInputCallbackForFileDescriptor(data));
-    if(xmlElement == zfnull)
+    if(xmlElement.xmlIsNull())
     {
         return zfautoObjectNull;
     }
@@ -38,11 +38,11 @@ ZFOBJECT_CREATOR_DEFINE(ZFObjectCreatorType_xml, data)
 }
 
 zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
-                                    ZF_IN const ZFXmlItem *xmlElement,
+                                    ZF_IN const ZFXmlItem &xmlElement,
                                     ZF_OUT_OPT zfstring *outErrorHintToAppend /* = zfnull */,
-                                    ZF_OUT_OPT const ZFXmlItem **outErrorPos /* = zfnull */)
+                                    ZF_OUT_OPT ZFXmlItem *outErrorPos /* = zfnull */)
 {
-    if(xmlElement == zfnull)
+    if(xmlElement.xmlIsNull())
     {
         ZFSerializableUtil::errorOccurred(outErrorHintToAppend, zfText("null xml element"));
         if(outErrorPos != zfnull)
@@ -51,7 +51,7 @@ zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
         }
         return zffalse;
     }
-    if(xmlElement->xmlType() != ZFXmlType::e_XmlElement)
+    if(xmlElement.xmlType() != ZFXmlType::e_XmlElement)
     {
         ZFSerializableUtil::errorOccurred(outErrorHintToAppend, zfText("param not type of xml element"));
         if(outErrorPos != zfnull)
@@ -61,7 +61,7 @@ zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
         return zffalse;
     }
 
-    if(xmlElement->xmlName() == zfnull)
+    if(xmlElement.xmlName() == zfnull)
     {
         ZFSerializableUtil::errorOccurred(outErrorHintToAppend, zfText("missing xml node name"));
         if(outErrorPos != zfnull)
@@ -70,12 +70,12 @@ zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
         }
         return zffalse;
     }
-    serializableData.itemClassSet(xmlElement->xmlName());
+    serializableData.itemClassSet(xmlElement.xmlName());
 
-    const ZFXmlItem *attribute = xmlElement->xmlAttributeFirst();
-    while(attribute != zfnull)
+    ZFXmlItem attribute = xmlElement.xmlAttributeFirst();
+    while(!attribute.xmlIsNull())
     {
-        if(attribute->xmlName() == zfnull)
+        if(attribute.xmlName() == zfnull)
         {
             ZFSerializableUtil::errorOccurred(outErrorHintToAppend, zfText("missing xml attribute name"));
             if(outErrorPos != zfnull)
@@ -84,24 +84,24 @@ zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
             }
             return zffalse;
         }
-        if(zfscmpTheSame(attribute->xmlName(), ZFSerializableKeyword_refType))
+        if(zfscmpTheSame(attribute.xmlName(), ZFSerializableKeyword_refType))
         {
-            serializableData.referenceRefTypeSet(attribute->xmlValue());
+            serializableData.referenceRefTypeSet(attribute.xmlValue());
         }
-        else if(zfscmpTheSame(attribute->xmlName(), ZFSerializableKeyword_refData))
+        else if(zfscmpTheSame(attribute.xmlName(), ZFSerializableKeyword_refData))
         {
-            serializableData.referenceRefDataSet(attribute->xmlValue());
+            serializableData.referenceRefDataSet(attribute.xmlValue());
         }
         else
         {
-            serializableData.attributeSet(attribute->xmlName(), attribute->xmlValue());
+            serializableData.attributeSet(attribute.xmlName(), attribute.xmlValue());
         }
 
-        attribute = attribute->xmlAttributeNext();
+        attribute = attribute.xmlAttributeNext();
     }
 
-    const ZFXmlItem *element = xmlElement->xmlChildElementFirst();
-    while(element != zfnull)
+    ZFXmlItem element = xmlElement.xmlChildElementFirst();
+    while(!element.xmlIsNull())
     {
         ZFSerializableData childData;
         if(!ZFXmlParseToSerializableData(childData, element, outErrorHintToAppend, outErrorPos))
@@ -109,18 +109,14 @@ zfbool ZFXmlParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
             return zffalse;
         }
         serializableData.elementAdd(childData);
-        element = element->xmlSiblingElementNext();
+        element = element.xmlSiblingElementNext();
     }
 
-    if(outErrorPos != zfnull)
-    {
-        *outErrorPos = zfnull;
-    }
     return serializableData.referenceCheckLoad(outErrorHintToAppend, zfnull);
 }
-ZFSerializableData ZFXmlParseToSerializableData(ZF_IN const ZFXmlItem *xmlElement,
+ZFSerializableData ZFXmlParseToSerializableData(ZF_IN const ZFXmlItem &xmlElement,
                                                 ZF_OUT_OPT zfstring *outErrorHintToAppend /* = zfnull */,
-                                                ZF_OUT_OPT const ZFXmlItem **outErrorPos /* = zfnull */)
+                                                ZF_OUT_OPT ZFXmlItem *outErrorPos /* = zfnull */)
 {
     ZFSerializableData ret;
     if(ZFXmlParseToSerializableData(ret, xmlElement, outErrorHintToAppend, outErrorPos))
@@ -177,7 +173,7 @@ ZFXmlItem ZFXmlPrintFromSerializableData(ZF_IN const ZFSerializableData &seriali
         {
             return ZFXmlItem();
         }
-        ret->xmlChildAdd(child);
+        ret.xmlChildAdd(child);
     }
 
     return ret;

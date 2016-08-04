@@ -90,9 +90,11 @@ private:
             fromDataTimes,
             ZFTimeValueToStringFriendly(fromDataUsedTime).cString());
 
-        this->testCaseOutputSeparator();
-        this->testCaseOutput(zfText("content: %s"), xmlString.cString());
-        this->testCaseOutput(zfText("newly: %s"), ZFXmlToString(xmlItemNew).cString());
+        #if 0
+            this->testCaseOutputSeparator();
+            this->testCaseOutput(zfText("content: %s"), xmlString.cString());
+            this->testCaseOutput(zfText("newly: %s"), ZFXmlToString(xmlItemNew).cString());
+        #endif
 
         ZFCoreStatistic::invokeTimeAccurateRemove(zfText("ZFXmlPerformance_test_toData"));
         ZFCoreStatistic::invokeTimeAccurateRemove(zfText("ZFXmlPerformance_test_fromData"));

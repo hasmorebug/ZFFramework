@@ -55,15 +55,15 @@ ZFOUTPUT_TYPE(ZFJsonItem *, {output << (const ZFJsonItem *)v;})
  * @brief parse json formated data to serializable
  */
 extern ZF_ENV_EXPORT zfbool ZFJsonParseToSerializableData(ZF_OUT ZFSerializableData &serializableData,
-                                                          ZF_IN const ZFJsonItem *jsonObject,
+                                                          ZF_IN const ZFJsonItem &jsonObject,
                                                           ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                          ZF_OUT_OPT const ZFJsonItem **outErrorPos = zfnull);
+                                                          ZF_OUT_OPT ZFJsonItem *outErrorPos = zfnull);
 /**
  * @brief see #ZFJsonParseToSerializableData
  */
-extern ZF_ENV_EXPORT ZFSerializableData ZFJsonParseToSerializableData(ZF_IN const ZFJsonItem *jsonObject,
+extern ZF_ENV_EXPORT ZFSerializableData ZFJsonParseToSerializableData(ZF_IN const ZFJsonItem &jsonObject,
                                                                       ZF_OUT_OPT zfstring *outErrorHintToAppend = zfnull,
-                                                                      ZF_OUT_OPT const ZFJsonItem **outErrorPos = zfnull);
+                                                                      ZF_OUT_OPT ZFJsonItem *outErrorPos = zfnull);
 /**
  * @brief print serializable to json formated data
  */

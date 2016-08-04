@@ -15,62 +15,73 @@
 ZF_NAMESPACE_GLOBAL_BEGIN
 ZFSTRINGENCODING_ASSERT(ZFStringEncoding::e_UTF8)
 
+zfclassNotPOD _ZFP_ZFJsonImpl_default_MemoryPoolHolder
+{
+public:
+    zfindex refCount;
+    ZFBuffer buf;
+    rapidjson::Document implJsonDoc;
+public:
+    _ZFP_ZFJsonImpl_default_MemoryPoolHolder(void)
+    : refCount(0)
+    , buf()
+    , implJsonDoc()
+    {
+    }
+};
+
 ZFPROTOCOL_IMPLEMENTATION_BEGIN(ZFJsonImpl_default, ZFJson, ZFProtocolLevelDefault)
     ZFPROTOCOL_IMPLEMENTATION_PLATFORM_HINT(zfText("rapidjson"))
 public:
-    virtual zfbool jsonParse(ZF_IN_OUT ZFJsonItem *jsonObject,
-                             ZF_IN const zfchar *src,
-                             ZF_IN_OPT zfindex size = zfindexMax)
+    virtual ZFJsonItem jsonParse(ZF_IN const zfchar *src,
+                                 ZF_IN_OPT zfindex size = zfindexMax,
+                                 ZF_IN_OPT const ZFJsonParseFlags &flags = ZFJsonParseFlagsDefault)
     {
-        rapidjson::Document implJsonDoc;
-        implJsonDoc.Parse<rapidjson::kParseNumbersAsStringsFlag>(src, size);
-        if(implJsonDoc.HasParseError())
-        {
-            return zffalse;
-        }
-        ZFJsonItem ret = this->jsonConvert(implJsonDoc);
-        if(ret.jsonType() == ZFJsonType::e_JsonNull)
-        {
-            return zffalse;
-        }
-        *jsonObject = ret;
-        return zftrue;
+        ZFBuffer buf;
+        buf.bufferCopy(src, size);
+        return this->jsonParse(buf, flags);
     }
-    virtual zfbool jsonParse(ZF_IN_OUT ZFJsonItem *jsonObject,
-                             ZF_IN const ZFInputCallback &inputCallback)
+    virtual ZFJsonItem jsonParse(ZF_IN const ZFInputCallback &inputCallback,
+                                 ZF_IN_OPT const ZFJsonParseFlags &flags = ZFJsonParseFlagsDefault)
     {
         ZFBuffer buf = ZFInputCallbackReadToBuffer(inputCallback);
-        if(buf.buffer() == zfnull)
+        return this->jsonParse(buf, flags);
+    }
+    virtual void jsonMemoryPoolRelease(ZF_IN void *token, ZF_IN const zfchar *value)
+    {
+        _ZFP_ZFJsonImpl_default_MemoryPoolHolder *docHolder = (_ZFP_ZFJsonImpl_default_MemoryPoolHolder *)token;
+        --(docHolder->refCount);
+        if(docHolder->refCount == 0)
         {
-            return zffalse;
+            zfdelete(docHolder);
         }
-
-        rapidjson::Document implJsonDoc;
-        implJsonDoc.ParseInsitu<rapidjson::kParseNumbersAsStringsFlag>(buf.bufferAsString());
-        if(implJsonDoc.HasParseError())
-        {
-            return zffalse;
-        }
-        ZFJsonItem ret = this->jsonConvert(implJsonDoc);
-        if(ret.jsonType() == ZFJsonType::e_JsonNull)
-        {
-            return zffalse;
-        }
-        *jsonObject = ret;
-        return zftrue;
     }
 private:
-    ZFJsonItem jsonConvert(ZF_IN const rapidjson::Value &implJsonItem)
+    ZFJsonItem jsonParse(ZF_IN_OUT ZFBuffer &buf,
+                         ZF_IN_OPT const ZFJsonParseFlags &flags = ZFJsonParseFlagsDefault)
     {
-        /*
-         kNullType = 0,      //!< null
-         kFalseType = 1,     //!< false
-         kTrueType = 2,      //!< true
-         kObjectType = 3,    //!< object
-         kArrayType = 4,     //!< array
-         kStringType = 5,    //!< string
-         kNumberType = 6     //!< number
-         */
+        if(buf.buffer() == zfnull)
+        {
+            return ZFJsonItem();
+        }
+        _ZFP_ZFJsonImpl_default_MemoryPoolHolder *docHolder = zfnew(_ZFP_ZFJsonImpl_default_MemoryPoolHolder);
+        docHolder->buf = buf;
+        docHolder->implJsonDoc.ParseInsitu<rapidjson::kParseNumbersAsStringsFlag>(buf.bufferAsString());
+        if(docHolder->implJsonDoc.HasParseError())
+        {
+            return ZFJsonItem();
+        }
+        ZFJsonItem ret = this->jsonConvert(docHolder->implJsonDoc, docHolder);
+        if(docHolder->refCount == 0)
+        {
+            zfdelete(docHolder);
+        }
+        return ret;
+    }
+private:
+    ZFJsonItem jsonConvert(ZF_IN const rapidjson::Value &implJsonItem,
+                           ZF_IN _ZFP_ZFJsonImpl_default_MemoryPoolHolder *docHolder)
+    {
         switch(implJsonItem.GetType())
         {
             case rapidjson::kNullType:
@@ -81,7 +92,8 @@ private:
             case rapidjson::kNumberType:
             {
                 ZFJsonItem jsonValue(ZFJsonType::e_JsonValue);
-                jsonValue.jsonValueSet(implJsonItem.GetString());
+                ++(docHolder->refCount);
+                this->jsonMemoryPool_jsonValueSet(jsonValue, implJsonItem.GetString(), docHolder);
                 return jsonValue;
             }
             case rapidjson::kArrayType:
@@ -89,8 +101,8 @@ private:
                 ZFJsonItem jsonArray(ZFJsonType::e_JsonArray);
                 for(rapidjson::Value::ConstValueIterator it = implJsonItem.Begin(); it != implJsonItem.End(); ++it)
                 {
-                    ZFJsonItem jsonChild = this->jsonConvert(*it);
-                    if(jsonChild.jsonType() == ZFJsonType::e_JsonNull)
+                    ZFJsonItem jsonChild = this->jsonConvert(*it, docHolder);
+                    if(jsonChild.jsonIsNull())
                     {
                         return ZFJsonItem();
                     }
@@ -103,12 +115,13 @@ private:
                 ZFJsonItem jsonObject(ZFJsonType::e_JsonObject);
                 for(rapidjson::Value::ConstMemberIterator it = implJsonItem.MemberBegin(); it != implJsonItem.MemberEnd(); ++it)
                 {
-                    ZFJsonItem jsonChild = this->jsonConvert(it->value);
-                    if(jsonChild.jsonType() == ZFJsonType::e_JsonNull)
+                    ZFJsonItem jsonChild = this->jsonConvert(it->value, docHolder);
+                    if(jsonChild.jsonIsNull())
                     {
                         return ZFJsonItem();
                     }
-                    jsonObject.jsonItemSet(it->name.GetString(), jsonChild);
+                    ++(docHolder->refCount);
+                    this->jsonMemoryPool_jsonItemSet(jsonObject, it->name.GetString(), docHolder, jsonChild);
                 }
                 return jsonObject;
             }
