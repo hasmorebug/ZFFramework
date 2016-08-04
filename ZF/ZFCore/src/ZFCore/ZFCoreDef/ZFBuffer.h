@@ -120,16 +120,16 @@ public:
     /**
      * @brief util method to copy string
      */
-    zffinal zfbool bufferCopy(ZF_IN const zfchar *s)
+    zffinal zfbool bufferCopy(ZF_IN const zfchar *s, ZF_IN_OPT zfindex length = zfindexMax)
     {
-        return this->bufferCopy(s, zfslen(s));
+        return this->bufferCopy((const void *)s, ((length == zfindexMax) ? zfslen(s) : length) * sizeof(zfchar));
     }
     /**
      * @brief util method to copy string
      */
     zffinal zfbool bufferCopy(ZF_IN const zfstring &s)
     {
-        return this->bufferCopy(s, s.length());
+        return this->bufferCopy(s.cString(), s.length());
     }
 
 public:

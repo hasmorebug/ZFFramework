@@ -148,7 +148,7 @@ const zfchar *requireSerializableClass(ZF_IN const zfchar *desiredClass,
     const zfchar *ret = checkSerializableClass(desiredClass, serializableData);
     if(ret == zfnull)
     {
-        if(desiredClass == zfnull)
+        if(desiredClass == zfnull || *desiredClass == '\0')
         {
             ZFSerializableUtil::errorOccurred(outErrorHintToAppend, outErrorPos, serializableData,
                 zfText("missing serializable class"));
